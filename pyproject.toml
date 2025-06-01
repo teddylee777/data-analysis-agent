@@ -1,7 +1,7 @@
 [project]
-name = "react-agent"
+name = "dataanalysis-agent"
 version = "0.0.1"
-description = "Starter template for making a custom Reasoning and Action agent (using tool calling) in LangGraph."
+description = "A data analysis agent that processes CSV files and executes pandas queries using LangGraph."
 authors = [
     { name = "William Fu-Hinthorn", email = "13333726+hinthornw@users.noreply.github.com" },
 ]
@@ -15,7 +15,11 @@ dependencies = [
     "langchain>=0.2.14",
     "langchain-fireworks>=0.1.7",
     "python-dotenv>=1.0.1",
-    "langchain-tavily>=0.1",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "openpyxl>=3.1.0",
 ]
 
 
@@ -27,10 +31,10 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["langgraph.templates.react_agent", "react_agent"]
+packages = ["langgraph.templates.dataanalysis_agent", "dataanalysis_agent"]
 [tool.setuptools.package-dir]
-"langgraph.templates.react_agent" = "src/react_agent"
-"react_agent" = "src/react_agent"
+"langgraph.templates.dataanalysis_agent" = "src/dataanalysis_agent"
+"dataanalysis_agent" = "src/dataanalysis_agent"
 
 
 [tool.setuptools.package-data]
@@ -62,6 +66,6 @@ convention = "google"
 
 [dependency-groups]
 dev = [
-    "langgraph-cli[inmem]>=0.1.71",
+    "langgraph-cli[inmem]>=0.2.10",
     "pytest>=8.3.5",
 ]

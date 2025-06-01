@@ -8,7 +8,7 @@ from typing import Annotated
 from langchain_core.runnables import ensure_config
 from langgraph.config import get_config
 
-from react_agent import prompts
+from dataanalysis_agent import prompts
 
 
 @dataclass(kw_only=True)
@@ -31,10 +31,17 @@ class Configuration:
         },
     )
 
-    max_search_results: int = field(
-        default=10,
+    max_output_length: int = field(
+        default=5000,
         metadata={
-            "description": "The maximum number of search results to return for each search query."
+            "description": "The maximum length of output from Python REPL execution."
+        },
+    )
+    
+    enable_matplotlib: bool = field(
+        default=True,
+        metadata={
+            "description": "Enable matplotlib for data visualization in Python REPL."
         },
     )
 

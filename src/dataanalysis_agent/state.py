@@ -53,8 +53,12 @@ class State(InputState):
     It is set to 'True' when the step count reaches recursion_limit - 1.
     """
 
-    # Additional attributes can be added here as needed.
-    # Common examples include:
-    # retrieved_documents: List[Document] = field(default_factory=list)
-    # extracted_entities: Dict[str, Any] = field(default_factory=dict)
-    # api_connections: Dict[str, Any] = field(default_factory=dict)
+    # Data analysis specific attributes
+    csv_file_path: str | None = field(default=None)
+    """Path to the CSV file to be analyzed."""
+    
+    dataframe_loaded: bool = field(default=False)
+    """Flag indicating whether the CSV has been loaded into a pandas DataFrame."""
+    
+    analysis_context: dict = field(default_factory=dict)
+    """Dictionary to store analysis results and intermediate data."""

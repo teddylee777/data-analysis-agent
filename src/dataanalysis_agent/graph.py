@@ -5,17 +5,31 @@ Works with a chat model with tool calling support.
 
 from datetime import UTC, datetime
 from typing import Dict, List, Literal, cast
+import re
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
-from react_agent.configuration import Configuration
-from react_agent.state import InputState, State
-from react_agent.tools import TOOLS
-from react_agent.utils import load_chat_model
+from dataanalysis_agent.configuration import Configuration
+from dataanalysis_agent.state import InputState, State
+from dataanalysis_agent.tools import TOOLS
+from dataanalysis_agent.utils import load_chat_model
 
 # Define the function that calls the model
+
+
+def extract_images_from_messages(messages: List) -> List[str]:
+    """Extract all markdown image tags from tool messages."""
+    images = []
+    for msg in messages:
+        if isinstance(msg, ToolMessage):
+            # Find all markdown image tags in the tool message content
+            # Pattern matches ![alt text](http://localhost:8001/filename.png)
+            img_pattern = r'(!\[[^\]]*\]\(http://localhost:8001/[^)]+\))'
+            found_images = re.findall(img_pattern, msg.content)
+            images.extend(found_images)
+    return images
 
 
 async def call_model(state: State) -> Dict[str, List[AIMessage]]:
@@ -24,11 +38,7 @@ async def call_model(state: State) -> Dict[str, List[AIMessage]]:
     This function prepares the prompt, initializes the model, and processes the response.
 
     Args:
-        state (State): The current state of the conversation.
-        config (RunnableConfig): Configuration for the model run.
-
-    Returns:
-        dict: A dictionary containing the model's response message.
+        state: The current state of the conversation.
     """
     configuration = Configuration.from_context()
 
@@ -59,8 +69,34 @@ async def call_model(state: State) -> Dict[str, List[AIMessage]]:
             ]
         }
 
-    # Return the model's response as a list to be added to existing messages
-    return {"messages": [response]}
+    # Check if there are any images in recent tool messages
+    # Look at the last few messages to find tool responses
+    recent_images = []
+    for i in range(len(state.messages) - 1, max(0, len(state.messages) - 5), -1):
+        msg = state.messages[i]
+        if isinstance(msg, ToolMessage) and '![' in msg.content and 'http://localhost:8001/' in msg.content:
+            images = extract_images_from_messages([msg])
+            recent_images.extend(images)
+            break  # Only get images from the most recent tool call
+
+    # If we found images and this is not a tool-calling response, prepend them
+    messages_to_return = []
+    
+    if recent_images and not response.tool_calls:
+        # Create a message with just the images
+        image_content = "\n".join(recent_images)
+        messages_to_return.append(
+            AIMessage(
+                content=image_content,
+                id=f"{response.id}_images"
+            )
+        )
+    
+    # Add the original response
+    messages_to_return.append(response)
+    
+    # Return all messages
+    return {"messages": messages_to_return}
 
 
 # Define a new graph
@@ -82,10 +118,7 @@ def route_model_output(state: State) -> Literal["__end__", "tools"]:
     This function checks if the model's last message contains tool calls.
 
     Args:
-        state (State): The current state of the conversation.
-
-    Returns:
-        str: The name of the next node to call ("__end__" or "tools").
+        state: The current state of the conversation.
     """
     last_message = state.messages[-1]
     if not isinstance(last_message, AIMessage):
